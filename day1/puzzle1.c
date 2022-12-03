@@ -20,7 +20,7 @@ int read_next(FILE *file) {
 }
 
 int main() {
-    FILE *infile = fopen("day1/input1.txt", "r");
+    FILE *infile = fopen("input.txt", "r");
     if (!infile) return 1;
     int biggest = 0, current = 0, n;
     for (;;) {
