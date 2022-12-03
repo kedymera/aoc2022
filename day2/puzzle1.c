@@ -8,10 +8,17 @@ int main() {
     char elfchoice = 0, mychoice = 0;
     int score = 0;
     while (fgets(buff, 5, infile)) {
-        elfchoice = buff[0];
-        mychoice = buff[2];
-        printf("adding choice score %c == %d\n", mychoice, mychoice - 'X' + 1);
-        score += mychoice - 'X' + 1;
+        // rock == 0, paper == 1, scissors == 2
+        elfchoice = buff[0] - 'A';
+        mychoice = buff[2] - 'X';
+        score += mychoice + 1;
+        // outcomes
+        //     draw
+        if (mychoice == elfchoice) score += 3;
+        //     i win
+        else if (mychoice == (elfchoice+1) % 3) score += 6;
+        //     i lose -> do nothing
+        printf("score increased to %d by line %s", score, buff);
     }
     fclose(infile);
 
