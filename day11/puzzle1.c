@@ -40,11 +40,45 @@ struct Monkey {
     int falserecipient;
 };
 
-int main() {
+void printmonkeys(struct Monkey monkeys[], int monkeycount) {
+    for (int i = 0; i < monkeycount; ++i) {
+        PRINTTAB;
+        printf("Monkey %d\n", i);
+
+        PRINTTAB;
+        printf("  Starting items: ");
+        printarray(monkeys[i].items, monkeys[i].numitems);
+        printf("\n");
+
+        PRINTTAB;
+        printf("  Operation: new = old ");
+        switch(monkeys[i].op) {
+            case OpAdd:
+                printf("+ %d\n", monkeys[i].operand);
+                break;
+            case OpMult:
+                printf("* %d\n", monkeys[i].operand);
+                break;
+            case OpPow:
+                printf("* old\n");
+                break;
+        }
+
+        PRINTTAB;
+        printf("  Test: divisible by %d\n", monkeys[i].divisor);
+
+        PRINTTAB;
+        printf("    If true: throw to monkey %d\n", monkeys[i].truerecipient);
+
+        PRINTTAB;
+        printf("    If false: throw to monkey %d\n", monkeys[i].falserecipient);
+    }
+}
+
+void parsemonkeys(struct Monkey monkeys[], int monkeycount, const char *filename) {
     char buff[BUFFSZ];
-    FILE *file = fopen("input.txt", "r");
-    if (!file) return 1;
-    struct Monkey monkeys[NUMMONKEYS];
+    FILE *file = fopen(filename, "r");
+    if (!file) exit(1);
     int curr = 0;
     monkeys[curr].numitems = 0;
     while (fgets(buff, BUFFSZ, file)) {
@@ -90,37 +124,10 @@ int main() {
             monkeys[curr].falserecipient = conv_next_int_until_char(buff, '\n', &i);
         }
     }
+}
 
-    for (int i = 0; i < 8; ++i) {
-        PRINTTAB;
-        printf("Monkey %d\n", i);
-
-        PRINTTAB;
-        printf("  Starting items: ");
-        printarray(monkeys[i].items, monkeys[i].numitems);
-        printf("\n");
-
-        PRINTTAB;
-        printf("  Operation: new = old ");
-        switch(monkeys[i].op) {
-            case OpAdd:
-                printf("+ %d\n", monkeys[i].operand);
-                break;
-            case OpMult:
-                printf("* %d\n", monkeys[i].operand);
-                break;
-            case OpPow:
-                printf("* old\n");
-                break;
-        }
-
-        PRINTTAB;
-        printf("  Test: divisible by %d\n", monkeys[i].divisor);
-
-        PRINTTAB;
-        printf("    If true: throw to monkey %d\n", monkeys[i].truerecipient);
-
-        PRINTTAB;
-        printf("    If false: throw to monkey %d\n", monkeys[i].falserecipient);
-    }
+int main() {
+    struct Monkey monkeys[NUMMONKEYS];
+    parsemonkeys(monkeys, NUMMONKEYS, "input.txt");
+    printmonkeys(monkeys, NUMMONKEYS);
 }
