@@ -35,6 +35,9 @@ struct Monkey {
     int numitems;
     enum Op op;
     int operand;
+    int divisor;
+    int truerecipient;
+    int falserecipient;
 };
 
 int main() {
@@ -71,6 +74,21 @@ int main() {
             int i = 25;
             monkeys[curr].operand = conv_next_int_until_char(buff, '\n', &i);
         }
+
+        if (strncmp(buff, "  Test: divisible by ", 21) == 0) {
+            int i = 21;
+            monkeys[curr].divisor = conv_next_int_until_char(buff, '\n', &i);
+        }
+
+        if (strncmp(buff, "    If true: throw to monkey ", 29) == 0) {
+            int i = 29;
+            monkeys[curr].truerecipient = conv_next_int_until_char(buff, '\n', &i);
+        }
+
+        if (strncmp(buff, "    If false: throw to monkey ", 30) == 0) {
+            int i = 30;
+            monkeys[curr].falserecipient = conv_next_int_until_char(buff, '\n', &i);
+        }
     }
 
     for (int i = 0; i < 8; ++i) {
@@ -95,5 +113,14 @@ int main() {
                 printf("* old\n");
                 break;
         }
+
+        PRINTTAB;
+        printf("  Test: divisible by %d\n", monkeys[i].divisor);
+
+        PRINTTAB;
+        printf("    If true: throw to monkey %d\n", monkeys[i].truerecipient);
+
+        PRINTTAB;
+        printf("    If false: throw to monkey %d\n", monkeys[i].falserecipient);
     }
 }
