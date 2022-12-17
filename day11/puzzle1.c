@@ -4,6 +4,7 @@
 
 #define BUFFSZ 128
 #define NUMMONKEYS 8
+#define PRINTTAB printf("\t\t")
 
 void printarray(int arr[], int sz) {
     printf("[");
@@ -23,9 +24,17 @@ int conv_next_int_until_char(char *str, char ch, int *i) {
     return atoi(str+start);
 }
 
+enum Op {
+    OpAdd,
+    OpMult,
+    OpPow,
+};
+
 struct Monkey {
     int items[40];
     int numitems;
+    enum Op op;
+    int operand;
 };
 
 int main() {
@@ -49,10 +58,42 @@ int main() {
                 monkeys[curr].items[monkeys[curr].numitems++] = item;
             }
         }
+
+        if (strncmp(buff, "  Operation: new = old ", 23) == 0) {
+            if (buff[23] == '+') monkeys[curr].op = OpAdd;
+            if (buff[23] == '*') {
+                if (buff[25] == 'o') {
+                    monkeys[curr].op = OpPow;
+                    monkeys[curr].operand = 2;
+                }
+                else monkeys[curr].op = OpMult;
+            }
+            int i = 25;
+            monkeys[curr].operand = conv_next_int_until_char(buff, '\n', &i);
+        }
     }
+
     for (int i = 0; i < 8; ++i) {
-        printf("monkey %d has %d items: ", i, monkeys[i].numitems);
+        PRINTTAB;
+        printf("Monkey %d\n", i);
+
+        PRINTTAB;
+        printf("  Starting items: ");
         printarray(monkeys[i].items, monkeys[i].numitems);
         printf("\n");
+
+        PRINTTAB;
+        printf("  Operation: new = old ");
+        switch(monkeys[i].op) {
+            case OpAdd:
+                printf("+ %d\n", monkeys[i].operand);
+                break;
+            case OpMult:
+                printf("* %d\n", monkeys[i].operand);
+                break;
+            case OpPow:
+                printf("* old\n");
+                break;
+        }
     }
 }
