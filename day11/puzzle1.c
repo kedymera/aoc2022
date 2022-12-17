@@ -1,12 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define BUFFSZ 128
 #define NUMMONKEYS 8
+#define NUMROUNDS 20
 #define PRINTTAB printf("\t\t")
 
 void printarray(int arr[], int sz) {
+    if (sz == 0) {
+        printf("None");
+        return;
+    }
     printf("[");
     for (int i = 0; i < sz; ++i) {
         printf("%d, ", arr[i]);
@@ -38,7 +44,12 @@ struct Monkey {
     int divisor;
     int truerecipient;
     int falserecipient;
+    int inspections;
 };
+
+void givemonkeyitem(struct Monkey *monkey, int item) {
+    monkey->items[monkey->numitems++] = item;
+}
 
 void printmonkeys(struct Monkey monkeys[], int monkeycount) {
     for (int i = 0; i < monkeycount; ++i) {
@@ -46,7 +57,7 @@ void printmonkeys(struct Monkey monkeys[], int monkeycount) {
         printf("Monkey %d\n", i);
 
         PRINTTAB;
-        printf("  Starting items: ");
+        printf("  Items: ");
         printarray(monkeys[i].items, monkeys[i].numitems);
         printf("\n");
 
@@ -72,20 +83,25 @@ void printmonkeys(struct Monkey monkeys[], int monkeycount) {
 
         PRINTTAB;
         printf("    If false: throw to monkey %d\n", monkeys[i].falserecipient);
+
+        PRINTTAB;
+        printf("  Inspections: %d\n", monkeys[i].inspections);
     }
 }
 
-void parsemonkeys(struct Monkey monkeys[], int monkeycount, const char *filename) {
+int parsemonkeys(struct Monkey monkeys[], const char *filename) {
     char buff[BUFFSZ];
     FILE *file = fopen(filename, "r");
     if (!file) exit(1);
     int curr = 0;
     monkeys[curr].numitems = 0;
+    monkeys[curr].inspections = 0;
     while (fgets(buff, BUFFSZ, file)) {
-        printf("%s", buff);
+        //printf("%s", buff);
         if (strncmp(buff, "\n", 1) == 0) {
             ++curr;
             monkeys[curr].numitems = 0;
+            monkeys[curr].inspections = 0;
         }
 
         if (strncmp(buff, "  Starting items: ", 18) == 0) {
@@ -124,10 +140,85 @@ void parsemonkeys(struct Monkey monkeys[], int monkeycount, const char *filename
             monkeys[curr].falserecipient = conv_next_int_until_char(buff, '\n', &i);
         }
     }
+    return curr+1;
+}
+
+int applyoperation(struct Monkey monkey, int i) {
+    switch (monkey.op) {
+        case OpAdd:
+            printf("    worry level +%d to ", monkey.operand);
+            return monkey.items[i] + monkey.operand;
+        case OpMult:
+            printf("    worry level *%d to ", monkey.operand);
+            return monkey.items[i] * monkey.operand;
+        case OpPow:
+            printf("    worry level squared to ");
+            return monkey.items[i] * monkey.items[i];
+        default:
+            printf("invalid operation: %d\n", monkey.op);
+            exit(1);
+    }
+}
+
+void playround(struct Monkey monkeys[], int monkeycount) {
+    for (int m = 0; m < monkeycount; ++m) {
+        printf("Monkey %d:\n", m);
+        if (!monkeys[m].numitems) {
+            printf("  No items!\n");
+            continue;
+        }
+        for (int i = 0; i < monkeys[m].numitems; ++i) {
+            ++monkeys[m].inspections;
+            printf(" %d inspect %d\n", m, monkeys[m].items[i]);
+
+            monkeys[m].items[i] = applyoperation(monkeys[m], i);
+            printf("%d\n", monkeys[m].items[i]);
+
+            monkeys[m].items[i] /= 3;
+            printf("    worry level div 3 to %d\n", monkeys[m].items[i]);
+
+            if (monkeys[m].items[i] % monkeys[m].divisor == 0) {
+                printf("    worry level %d is divisible by %d; throw to %d\n",
+                        monkeys[m].items[i], monkeys[m].divisor, monkeys[m].truerecipient);
+                givemonkeyitem(&monkeys[monkeys[m].truerecipient], monkeys[m].items[i]);
+            } else {
+                printf("    worry level %d is NOT divisible by %d; throw to %d\n",
+                        monkeys[m].items[i], monkeys[m].divisor, monkeys[m].falserecipient);
+                givemonkeyitem(&monkeys[monkeys[m].falserecipient], monkeys[m].items[i]);
+            }
+        }
+        monkeys[m].numitems = 0; // all thrown
+    }
 }
 
 int main() {
     struct Monkey monkeys[NUMMONKEYS];
-    parsemonkeys(monkeys, NUMMONKEYS, "input.txt");
+    int monkeycount = parsemonkeys(monkeys, "input.txt");
+    assert(monkeycount == NUMMONKEYS);
     printmonkeys(monkeys, NUMMONKEYS);
+    for (int i = 0; i < NUMROUNDS; ++i) {
+        printf("round %d\n", i);
+        playround(monkeys, NUMMONKEYS);
+        printf("post round %d items: \n", i);
+        for (int m = 0; m < NUMMONKEYS; ++m) {
+            printf("  monkey %d: ", m);
+            printarray(monkeys[m].items, monkeys[m].numitems);
+            printf("\n");
+        }
+    }
+    printmonkeys(monkeys, NUMMONKEYS);
+
+    int top1=0, top2=0;
+    printf("inspections: ");
+    for (int i = 0; i < NUMMONKEYS; ++i) {
+        printf("%d, ", monkeys[i].inspections);
+        if (monkeys[i].inspections >= top1) {
+            top2 = top1;
+            top1 = monkeys[i].inspections;
+        } else if (monkeys[i].inspections >= top2) {
+            top2 = monkeys[i].inspections;
+        }
+    }
+    printf("\ntop 2 are %d and %d\n", top1, top2);
+    printf("product is %d\n", top1*top2);
 }
