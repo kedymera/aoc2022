@@ -4,7 +4,6 @@
 #include <assert.h>
 
 #define BUFFSZ 256
-#define PRINTDEPTH for (int __i = depth-1; __i > 0; --__i) printf("  ");
 
 struct PacketData {
     struct PacketData *parent;
@@ -47,67 +46,49 @@ void AppendNumber(struct PacketData *packet, long number) {
 void AppendList(struct PacketData *packet) {
     AppendNumber(packet, -1);
 }
-
+struct PacketData *CreateList() {
+    struct PacketData *packet = malloc(sizeof(struct PacketData));
+    packet->parent = NULL;
+    packet->number = -1;
+    packet->list = NULL;
+    packet->listsz = 0;
+    return packet;
+}
 
 int main() {
-    struct PacketData *pack = malloc(sizeof(struct PacketData));
-    pack->parent = NULL;
-    pack->number = -1;
-    pack->list = NULL;
-    pack->listsz = 0;
+    char buff[BUFFSZ];
+    FILE *file = fopen("input.txt", "r");
+    if (!file) return 1;
 
-    AppendNumber(pack, 54);
-    AppendList(pack);
-    AppendNumber(pack->list+pack->listsz-1, 5);
-    AppendList(pack);
-    AppendNumber(pack, 514);
-    AppendNumber(pack, 525);
-
-    PrintPacket(pack);
-    printf("\n");
-
-
-    FreePacket(pack);
-    free(pack);
-
-return 0;
-
-
-//    char buff[BUFFSZ];
-//    FILE *file = fopen("input.txt", "r");
-//    if (!file) return 1;
-//
-//    struct PacketDataList packet1;
-//    packet1.list = malloc(0);
-//    packet1.sz = 0;
-//    int depth = 1;
-//    struct PacketDataList *curr = &packet1;
-//
-//    while (fgets(buff, BUFFSZ, file)) {
-//        printf("string packet:\n");
-//        printf("%s", buff);
-//        for (char *p = buff; *p; ++p) {
-//            if (*p >= '0' && *p <= '9') {
-//                long a = strtol(p, &p, 10);
-//                AppendNumber(curr, a);
-//            }
-//            if (*p == ',') {
-//                // do nothing?
-//            }
-//            if (*p == '[') {
-//                ++depth;
-//                AppendList(curr);
-//                curr = &curr->list[curr->sz-1].list;
-//            }
-//            if (*p == ']') {
-//                --depth;
-//                // TODO: go back to parent
-//            }
-//            if (!depth) break;
-//        }
-//        printf("parsed packet:\n");
-//        PrintPacket(&packet1);
-//        printf("\n\n\n");
-//    }
-//    printf("hello world\n");
+    while (fgets(buff, BUFFSZ, file)) {
+        printf("string packet: %s", buff);
+        struct PacketData *packet1 = CreateList();
+        struct PacketData *curr = packet1;
+        int depth = 1;
+        for (char *p = buff+1; *p; ++p) {
+            if (*p >= '0' && *p <= '9') {
+                long a = strtol(p, &p, 10);
+                AppendNumber(curr, a);
+            }
+            if (*p == ',') {
+                // do nothing?
+            }
+            if (*p == '[') {
+                ++depth;
+                AppendList(curr);
+                curr = curr->list + curr->listsz-1;
+            }
+            if (*p == ']') {
+                --depth;
+                curr = curr->parent;
+            }
+            if (!depth) break;
+        }
+        printf("parsed packet: ");
+        PrintPacket(packet1);
+        printf("\n\n");
+        FreePacket(packet1);
+        free(packet1);
+    }
+    printf("hello world\n");
 }
