@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #define BUFFSZ 256
@@ -92,6 +93,7 @@ void NumberToSingleton(struct PacketData *numberdata) {
     numberdata->number = -1;
 }
 
+
 int PacketCompare(struct PacketData *left, struct PacketData *right) {
     size_t minlen = MIN(left->listsz, right->listsz);
     for (size_t i = 0; i < minlen; ++i) {
@@ -114,6 +116,9 @@ int PacketCompare(struct PacketData *left, struct PacketData *right) {
     }
     return right->listsz - left->listsz; // accounts for 'running out' clause
 }
+int PacketCompareVoidWrapper(const void *LEFT, const void *RIGHT) {
+    return PacketCompare(*(struct PacketData **) LEFT, *(struct PacketData **) RIGHT);
+}
 
 int main() {
 
@@ -134,6 +139,9 @@ int main() {
     PrintPacket(packets[index]);
     printf("\n");
     ++index;
+    
+    struct PacketData *divider2 = packets[0];
+    struct PacketData *divider6 = packets[1];
 
     char buff[BUFFSZ];
     FILE *file = fopen("input.txt", "r");
@@ -157,9 +165,23 @@ int main() {
     }
     assert(index == NUMPACKETS);
 
+    // sort!
+    qsort(packets, NUMPACKETS, sizeof(struct PacketData *), &PacketCompareVoidWrapper);
+    printf("SORTED!\n");
+    
+    int index2, index6;
+    for (int i = 1; i <= NUMPACKETS; ++i) {
+        // iterate in reverse because the comparator is backwards x)
+        if (packets[NUMPACKETS-i] == divider2) index2 = i;
+        if (packets[NUMPACKETS-i] == divider6) index6 = i;
+    }
+
+    printf("[[2]] divider at %d\n", index2);
+    printf("[[6]] divider at %d\n", index6);
+    printf("product is %d\n", index2*index6);
+
     for (int i = 0; i < NUMPACKETS; ++i) {
         FreePacket(packets[i]);
     }
     free(packets);
-    printf("hello world\n");
 }
