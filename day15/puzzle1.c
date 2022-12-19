@@ -6,6 +6,11 @@
 #define ROW 2000000
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
 
+struct endpt {
+    long x;
+    bool left;
+};
+
 long l1metric(long x1, long y1, long x2, long y2) {
     return ABS(x1-x2) + ABS(y1-y2);
 }
@@ -20,7 +25,7 @@ long ReadNextNumber(char **p) {
     return 0;
 }
 
-long FindIntersections(long cx, long cy, long r, long ly) {
+long FindIntersections(long cy, long r, long ly) {
     // returns the x-distance left and right of the circle's centre at which the line and circle intersect
     if (cy <= ly && ly <= cy+r) { // intersect on top half of circle
         return r + cy-ly;
@@ -31,7 +36,7 @@ long FindIntersections(long cx, long cy, long r, long ly) {
     }
 }
 
-void ReadSensor(char buff[BUFFSZ]) {
+void ReadSensor(char buff[BUFFSZ], struct endpt **endpts, int *numendpts) {
     long sx, sy, bx, by;
     sx = ReadNextNumber(&buff);
     sy = ReadNextNumber(&buff);
@@ -42,22 +47,39 @@ void ReadSensor(char buff[BUFFSZ]) {
     long radius = l1metric(sx,sy,bx,by);
     printf("l1 disc radius: %ld\n", radius);
 
-    long xl, xr;
-    long dx = FindIntersections(sx, sy, radius, ROW);
-    if (dx != -1)
+    long dx = FindIntersections(sy, radius, ROW);
+    if (dx != -1) {
         printf("line and disc intersect at x=%ld and x=%ld\n", sx - dx, sx + dx);
+        *numendpts += 2;
+        *endpts = realloc(*endpts, *numendpts * sizeof(struct endpt));
+        (*endpts)[*numendpts-2].x = sx-dx;
+        (*endpts)[*numendpts-2].left = true;
+        (*endpts)[*numendpts-1].x = sx+dx;
+        (*endpts)[*numendpts-1].left = false;
+    }
     else
         printf("line and disc don't intersect\n");
 }
 
 int main() {
+    struct endpt *endpts = NULL;
+    int numendpts = 0;
+
     char buff[BUFFSZ];
     FILE *file = fopen("input.txt", "r");
     if (!file) return 1;
     while (fgets(buff, BUFFSZ, file)) {
         printf("%s", buff);
-        ReadSensor(buff);
+        ReadSensor(buff, &endpts, &numendpts);
         printf("\n");
     }
-    printf("hello world\n");
+    
+    printf("endpts:\n");
+    for (int i = 0; i < numendpts; ++i) {
+        printf("%ld - ", endpts[i].x);
+        if (endpts[i].left) printf("l\n");
+        else printf("r\n");
+    }
+    
+    free(endpts);
 }
