@@ -25,12 +25,16 @@ void PrintPacket(struct PacketData *packet) {
     printf("]");
 }
 
-void FreePacket(struct PacketData *packet) {
+void FreePacketRecursive(struct PacketData *packet) {
     if (packet->number < 0) {
         for (size_t i = 0; i< packet->listsz; ++i)
-            FreePacket(packet->list+i);
+            FreePacketRecursive(packet->list+i);
         free(packet->list);
     }
+}
+void FreePacket(struct PacketData *packet) {
+    FreePacketRecursive(packet);
+    free(packet);
 }
 
 void ExtendList(struct PacketData *packet) {
@@ -60,13 +64,8 @@ struct PacketData *ParsePacket(char *buff) {
     struct PacketData *curr = packet;
     int depth = 1;
     for (char *p = buff+1; *p; ++p) {
-        if (*p >= '0' && *p <= '9') {
-            long a = strtol(p, &p, 10);
-            AppendNumber(curr, a);
-        }
-        if (*p == ',') {
-            // do nothing?
-        }
+        if (*p >= '0' && *p <= '9')
+            AppendNumber(curr, strtol(p, &p, 10));
         if (*p == '[') {
             ++depth;
             AppendList(curr);
@@ -76,11 +75,9 @@ struct PacketData *ParsePacket(char *buff) {
             --depth;
             curr = curr->parent;
         }
+
         if (!depth) break;
     }
-    printf("parsed packet: ");
-    PrintPacket(packet);
-    printf("\n\n");
     return packet;
 }
 
@@ -90,10 +87,21 @@ int main() {
     if (!file) return 1;
 
     while (fgets(buff, BUFFSZ, file)) {
-        printf("string packet: %s", buff);
         struct PacketData *packet1 = ParsePacket(buff);
+        printf("packet1: ");
+        PrintPacket(packet1);
+        printf("\n");
+
+        fgets(buff, BUFFSZ, file);
+        struct PacketData *packet2 = ParsePacket(buff);
+        printf("packet2: ");
+        PrintPacket(packet2);
+        printf("\n\n");
+
         FreePacket(packet1);
-        free(packet1);
+        FreePacket(packet2);
+
+        fgets(buff, BUFFSZ, file); // waste the empty line
     }
     printf("hello world\n");
 }
