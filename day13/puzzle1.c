@@ -55,6 +55,35 @@ struct PacketData *CreateList() {
     return packet;
 }
 
+struct PacketData *ParsePacket(char *buff) {
+    struct PacketData *packet = CreateList();
+    struct PacketData *curr = packet;
+    int depth = 1;
+    for (char *p = buff+1; *p; ++p) {
+        if (*p >= '0' && *p <= '9') {
+            long a = strtol(p, &p, 10);
+            AppendNumber(curr, a);
+        }
+        if (*p == ',') {
+            // do nothing?
+        }
+        if (*p == '[') {
+            ++depth;
+            AppendList(curr);
+            curr = curr->list + curr->listsz-1;
+        }
+        if (*p == ']') {
+            --depth;
+            curr = curr->parent;
+        }
+        if (!depth) break;
+    }
+    printf("parsed packet: ");
+    PrintPacket(packet);
+    printf("\n\n");
+    return packet;
+}
+
 int main() {
     char buff[BUFFSZ];
     FILE *file = fopen("input.txt", "r");
@@ -62,31 +91,7 @@ int main() {
 
     while (fgets(buff, BUFFSZ, file)) {
         printf("string packet: %s", buff);
-        struct PacketData *packet1 = CreateList();
-        struct PacketData *curr = packet1;
-        int depth = 1;
-        for (char *p = buff+1; *p; ++p) {
-            if (*p >= '0' && *p <= '9') {
-                long a = strtol(p, &p, 10);
-                AppendNumber(curr, a);
-            }
-            if (*p == ',') {
-                // do nothing?
-            }
-            if (*p == '[') {
-                ++depth;
-                AppendList(curr);
-                curr = curr->list + curr->listsz-1;
-            }
-            if (*p == ']') {
-                --depth;
-                curr = curr->parent;
-            }
-            if (!depth) break;
-        }
-        printf("parsed packet: ");
-        PrintPacket(packet1);
-        printf("\n\n");
+        struct PacketData *packet1 = ParsePacket(buff);
         FreePacket(packet1);
         free(packet1);
     }
