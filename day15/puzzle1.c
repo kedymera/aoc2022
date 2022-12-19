@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <stdbool.h>
 
 #define BUFFSZ 128
@@ -79,20 +80,33 @@ int main() {
         printf("\n");
     }
     
-    printf("endpts:\n");
-    for (int i = 0; i < numendpts; ++i) {
-        printf("%ld - ", endpts[i].x);
-        if (endpts[i].left) printf("l\n");
-        else printf("r\n");
-    }
-
     qsort(endpts, numendpts, sizeof(struct endpt), &EndPtCompare);
-    printf("sorted endpts:\n");
+
+    int nesting = 0;
+    long currleft;
+    long unionlength = 0;
     for (int i = 0; i < numendpts; ++i) {
         printf("%ld - ", endpts[i].x);
         if (endpts[i].left) printf("l\n");
         else printf("r\n");
+
+        if (nesting == 0) {
+            assert(endpts[i].left);
+            currleft = endpts[i].x;
+        }
+
+        if (endpts[i].left)
+            ++nesting;
+        else
+            --nesting;
+
+        if (nesting == 0) {
+            unionlength += endpts[i].x - currleft;
+            printf("added superinterval of length %ld for a running total unionlength of %ld\n", endpts[i].x - currleft, unionlength);
+        }
     }
     
+    printf("total unionlength == %ld\n", unionlength);
+    // turns out this general union calculator is unnecessary as all the intervals form one superinterval but hey-ho
     free(endpts);
 }
