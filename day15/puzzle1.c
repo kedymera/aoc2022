@@ -1,7 +1,8 @@
+#include <assert.h>
+#include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <stdbool.h>
 
 #define BUFFSZ 128
 #define ROW 2000000
@@ -84,6 +85,7 @@ int main() {
 
     int nesting = 0;
     long currleft;
+    long lastright = INT_MIN;
     long unionlength = 0;
     for (int i = 0; i < numendpts; ++i) {
         printf("%ld - ", endpts[i].x);
@@ -93,6 +95,7 @@ int main() {
         if (nesting == 0) {
             assert(endpts[i].left);
             currleft = endpts[i].x;
+            if (lastright == currleft) ++currleft;
         }
 
         if (endpts[i].left)
@@ -101,12 +104,15 @@ int main() {
             --nesting;
 
         if (nesting == 0) {
-            unionlength += endpts[i].x - currleft;
+            unionlength += endpts[i].x - currleft + 1;
+            lastright = endpts[i].x;
             printf("added superinterval of length %ld for a running total unionlength of %ld\n", endpts[i].x - currleft, unionlength);
         }
     }
     
     printf("total unionlength == %ld\n", unionlength);
     // turns out this general union calculator is unnecessary as all the intervals form one superinterval but hey-ho
+    printf("but one beacon is known to be at 925348,2000000, so doesn't count\n");
+    printf("so %ld\n", unionlength - 1);
     free(endpts);
 }
