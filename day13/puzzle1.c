@@ -77,10 +77,16 @@ struct PacketData *ParsePacket(char *buff) {
     return NULL;
 }
 
+bool AreOrdered(struct PacketData *packet1, struct PacketData *packet2) {
+    return true;
+}
+
 int main() {
     char buff[BUFFSZ];
     FILE *file = fopen("input.txt", "r");
     if (!file) return 1;
+
+    int index = 1, indexsum = 0;
 
     while (fgets(buff, BUFFSZ, file)) {
         struct PacketData *packet1 = ParsePacket(buff);
@@ -92,12 +98,18 @@ int main() {
         struct PacketData *packet2 = ParsePacket(buff);
         printf("packet2: ");
         PrintPacket(packet2);
-        printf("\n\n");
+        printf("\n");
+
+        if (AreOrdered(packet1, packet2)) {
+            printf("packets are ordered, +%d\n", index);
+            indexsum += index;
+        }
 
         FreePacket(packet1);
         FreePacket(packet2);
-
+        ++index;
         fgets(buff, BUFFSZ, file); // waste the empty line
+        printf("\n");
     }
-    printf("hello world\n");
+    printf("final index sum of ordered packets: %d\n", indexsum);
 }
