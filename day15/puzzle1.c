@@ -11,6 +11,11 @@ struct endpt {
     bool left;
 };
 
+int EndPtCompare(const void *endpt1, const void *endpt2) {
+    // sort by x value
+    return (*(struct endpt *) endpt1).x - (*(struct endpt *) endpt2).x;
+}
+
 long l1metric(long x1, long y1, long x2, long y2) {
     return ABS(x1-x2) + ABS(y1-y2);
 }
@@ -75,6 +80,14 @@ int main() {
     }
     
     printf("endpts:\n");
+    for (int i = 0; i < numendpts; ++i) {
+        printf("%ld - ", endpts[i].x);
+        if (endpts[i].left) printf("l\n");
+        else printf("r\n");
+    }
+
+    qsort(endpts, numendpts, sizeof(struct endpt), &EndPtCompare);
+    printf("sorted endpts:\n");
     for (int i = 0; i < numendpts; ++i) {
         printf("%ld - ", endpts[i].x);
         if (endpts[i].left) printf("l\n");
