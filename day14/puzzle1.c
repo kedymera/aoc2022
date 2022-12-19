@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +56,25 @@ void ParseRockCurve(char cave[CAVESZ], char buff[BUFFSZ]) {
         }
     }
     cave[c(x, y)] = '#';
-    
+}
+
+bool DropSand(char cave[CAVESZ]) {
+    int x = 500, y = 0;
+    while (y < YMAX-1) {
+        if (cave[c(x, y+1)] == '.') {
+            ++y;
+        } else if (cave[c(x-1, y+1)] == '.') {
+            --x;
+            ++y;
+        } else if (cave[c(x+1, y+1)] == '.') {
+            ++x;
+            ++y;
+        } else {
+            cave[c(x, y)] = 'o';
+            return true;
+        }
+    }
+    return false;
 }
 
 int main() {
@@ -70,5 +89,10 @@ int main() {
         ParseRockCurve(cave, buff);
     }
 
-    printcave(cave);
+    int i = 0;
+    while (DropSand(cave)) {
+        printf("dropped sand #%d\n", ++i);
+        printcave(cave);
+    }
+    printf("dropped %d sands in total\n", i);
 }
