@@ -61,24 +61,20 @@ struct PacketData *CreateList() {
 
 struct PacketData *ParsePacket(char *buff) {
     struct PacketData *packet = CreateList();
-    struct PacketData *curr = packet;
-    int depth = 1;
     for (char *p = buff+1; *p; ++p) {
         if (*p >= '0' && *p <= '9')
-            AppendNumber(curr, strtol(p, &p, 10));
+            AppendNumber(packet, strtol(p, &p, 10));
         if (*p == '[') {
-            ++depth;
-            AppendList(curr);
-            curr = curr->list + curr->listsz-1;
+            AppendList(packet);
+            packet = packet->list + packet->listsz-1;
         }
         if (*p == ']') {
-            --depth;
-            curr = curr->parent;
+            if (packet->parent == NULL)
+                return packet;
+            packet = packet->parent;
         }
-
-        if (!depth) break;
     }
-    return packet;
+    return NULL;
 }
 
 int main() {
