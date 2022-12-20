@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,10 +10,15 @@ int min(int a, int b) {
     return a < b ? a : b;
 }
 
+int max(int a, int b) {
+    return a > b ? a : b;
+}
+
 struct Valve {
     char id[3];
     int rate;
     int tunnels[MAXTUNNELS+1];
+    bool open;
 };
 
 void PrintValves(struct Valve *valves, int numvalves) {
@@ -93,6 +99,7 @@ void ParseValves(const char *filename, struct Valve **valves, int *numvalves) {
         }
         for (int t = 0; t < MAXTUNNELS+1; ++t)
             (*valves)[i].tunnels[t] = -1;
+        (*valves)[i].open = false;
         ++i;
     }
     *numvalves = i;
@@ -120,6 +127,23 @@ void ParseValves(const char *filename, struct Valve **valves, int *numvalves) {
     fclose(file);
 }
 
+int MaxPressure(struct Valve *valves, int numvalves, int **dists, int start, int time) {
+    if (time <= 1) return 0;
+
+    int maxpressure = 0;
+    for (int i = 0; i < numvalves; ++i) {
+        // do we want to go to this valve?
+        if (valves[i].rate == 0) continue;
+        if (valves[i].open) continue;
+
+        valves[i].open = true;
+        int timeaftermove = time - dists[start][i] - 1; // -1 for time to open valve at dest
+        maxpressure = max(maxpressure, timeaftermove * valves[i].rate + MaxPressure(valves, numvalves, dists, i, timeaftermove));
+        valves[i].open = false;
+    }
+    return maxpressure;
+}
+
 int main() {
     struct Valve *valves = NULL;
     int numvalves = 0;
@@ -132,6 +156,11 @@ int main() {
 
     int **dists = InitDists(valves, numvalves);
     PrintDists(dists, numvalves);
+
+    int start = 0;
+    while (valves[start].id[0] != 'A' || valves[start].id[1] != 'A')
+        ++start;
+    printf("max pressure: %d\n", MaxPressure(valves, numvalves, dists, start, 30));
 
     FreeDists(dists, numvalves);
     free(valves);
