@@ -1,32 +1,54 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 
 #define BUFFSZ 128
 
 struct Valve {
     char id[3];
     int rate;
-    struct Valve **tunnels;
-    int numtunnels;
+    int tunnels[5];
 };
 
 void PrintValves(struct Valve *valves, int numvalves) {
     for (int i = 0; i < numvalves; ++i) {
         printf("Valve %s has rate %d and leads to ", valves[i].id, valves[i].rate);
-        for (int j = 0; j < valves[i].numtunnels; ++j) {
-            printf("%s", valves[i].tunnels[j]->id);
-            if (j != valves[i].numtunnels - 1)
-                printf(", ");
+        for (int j = 0; valves[i].tunnels[j] != -1; ++j) {
+            printf("%s,", valves[valves[i].tunnels[j]].id);
         }
         printf("\n");
     }
 }
 
-void FreeValves(struct Valve *valves, int numvalves) {
+int **InitDists(struct Valve *valves, int numvalves) {
+    int **dists = malloc(numvalves * sizeof(int *));
     for (int i = 0; i < numvalves; ++i) {
-        free(valves[i].tunnels);
+        dists[i] = malloc(numvalves * sizeof(int));
+        for (int j = 0; j < numvalves; ++j) {
+            dists[i][j] = INT_MAX;
+        }
     }
-    free(valves);
+
+    return dists;
+}
+
+void PrintDists(int **dists, int numvalves) {
+    for (int j = 0; j < numvalves; ++j) {
+        for (int i = 0; i < numvalves; ++i) {
+            if (dists[i][j] < 10)
+                printf("%d ", dists[i][j]);
+            else
+                printf(". ");
+        }
+        printf("\n");
+    }
+}
+
+void FreeDists(int **dists, int numvalves) {
+    for (int i = 0; i < numvalves; ++i)
+        free(dists[i]);
+    free(dists);
 }
 
 void ParseValves(const char *filename, struct Valve **valves, int *numvalves) {
@@ -51,28 +73,29 @@ void ParseValves(const char *filename, struct Valve **valves, int *numvalves) {
                 (*valves)[i].rate = strtol(p, &p, 10);
             }
         }
-        (*valves)[i].tunnels = NULL;
-        (*valves)[i].numtunnels = 0;
+        for (int t = 0; t < 5; ++t)
+            (*valves)[i].tunnels[t] = -1;
         ++i;
     }
     *numvalves = i;
     rewind(file);
     char temp[2];
     i = 0;
+    int t;
     while (fgets(buff, BUFFSZ, file)) {
         // skip 45 to jump roughly to where the tunnels are specified
+        t = 0;
         for (p = buff+45; *p; ++p) {
             if (*p >= 'A' && *p <= 'Z') {
                 temp[0] = *p++; temp[1] = *p++;
-                (*valves)[i].tunnels = realloc((*valves)[i].tunnels, ++(*valves)[i].numtunnels * sizeof(struct Valve *));
                 for (int v = 0; v < *numvalves; ++v) {
                     if (temp[0] == (*valves)[v].id[0] && temp[1] == (*valves)[v].id[1]) {
-                        (*valves)[i].tunnels[(*valves)[i].numtunnels-1] = &(*valves)[v];
+                        (*valves)[i].tunnels[t] = v;
                         break;
                     }
                 }
-            } 
-            
+                ++t;
+            }
         }
         ++i;
     }
@@ -89,5 +112,10 @@ int main() {
 #endif
     printf("\nparsed valves: \n");
     PrintValves(valves, numvalves);
-    FreeValves(valves, numvalves);
+
+    int **dists = InitDists(valves, numvalves);
+    PrintDists(dists, numvalves);
+
+    FreeDists(dists, numvalves);
+    free(valves);
 }
