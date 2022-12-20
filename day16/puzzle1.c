@@ -1,21 +1,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 
 #define BUFFSZ 128
+#define MAXTUNNELS 5
+
+int min(int a, int b) {
+    return a < b ? a : b;
+}
 
 struct Valve {
     char id[3];
     int rate;
-    int tunnels[5];
+    int tunnels[MAXTUNNELS+1];
 };
 
 void PrintValves(struct Valve *valves, int numvalves) {
+    printf("\nValves:\n");
     for (int i = 0; i < numvalves; ++i) {
         printf("Valve %s has rate %d and leads to ", valves[i].id, valves[i].rate);
         for (int j = 0; valves[i].tunnels[j] != -1; ++j) {
             printf("%s,", valves[valves[i].tunnels[j]].id);
+        }
+        printf("\n");
+    }
+}
+
+void PrintDists(int **dists, int numvalves) {
+    printf("\nDistances:\n");
+    for (int j = 0; j < numvalves; ++j) {
+        for (int i = 0; i < numvalves; ++i) {
+            if (dists[i][j] < 10)
+                printf("%d ", dists[i][j]);
+            else
+                printf(". ");
         }
         printf("\n");
     }
@@ -26,23 +44,23 @@ int **InitDists(struct Valve *valves, int numvalves) {
     for (int i = 0; i < numvalves; ++i) {
         dists[i] = malloc(numvalves * sizeof(int));
         for (int j = 0; j < numvalves; ++j) {
-            dists[i][j] = INT_MAX;
+            dists[i][j] = 999; // bigger than any possible path
         }
     }
 
-    return dists;
-}
-
-void PrintDists(int **dists, int numvalves) {
-    for (int j = 0; j < numvalves; ++j) {
-        for (int i = 0; i < numvalves; ++i) {
-            if (dists[i][j] < 10)
-                printf("%d ", dists[i][j]);
-            else
-                printf(". ");
+    // Floyd-Warshall
+    for (int i = 0; i < numvalves; ++i) {
+        dists[i][i] = 0;
+        for (int j = 0; valves[i].tunnels[j] != -1; ++j) {
+            dists[i][valves[i].tunnels[j]] = 1;
         }
-        printf("\n");
     }
+    for (int k = 0; k < numvalves; ++k)
+        for (int i = 0; i < numvalves; ++i)
+            for (int j = 0; j < numvalves; ++j)
+                dists[i][j] = min(dists[i][j], dists[i][k] + dists[k][j]);
+
+    return  dists;
 }
 
 void FreeDists(int **dists, int numvalves) {
@@ -73,7 +91,7 @@ void ParseValves(const char *filename, struct Valve **valves, int *numvalves) {
                 (*valves)[i].rate = strtol(p, &p, 10);
             }
         }
-        for (int t = 0; t < 5; ++t)
+        for (int t = 0; t < MAXTUNNELS+1; ++t)
             (*valves)[i].tunnels[t] = -1;
         ++i;
     }
@@ -110,7 +128,6 @@ int main() {
 #else
     ParseValves("input.txt", &valves, &numvalves);
 #endif
-    printf("\nparsed valves: \n");
     PrintValves(valves, numvalves);
 
     int **dists = InitDists(valves, numvalves);
