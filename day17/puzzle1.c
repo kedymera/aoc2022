@@ -1,6 +1,9 @@
+#include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef SMOL
 #define BUFFSZ 128
@@ -9,12 +12,41 @@
 #endif
 
 #define WIDTH 7
+char rocktypes[5][4][4] = { {
+        {'#', '.', '.', '.'},
+        {'#', '.', '.', '.'},
+        {'#', '.', '.', '.'},
+        {'#', '.', '.', '.'}
+    }, {
+        {'.', '#', '.', '.'},
+        {'#', '#', '#', '.'},
+        {'.', '#', '.', '.'},
+        {'.', '.', '.', '.'},
+    }, {
+        {'#', '.', '.', '.'},
+        {'#', '.', '.', '.'},
+        {'#', '#', '#', '.'},
+        {'.', '.', '.', '.'},
+    }, {
+        {'#', '#', '#', '#'},
+        {'.', '.', '.', '.'},
+        {'.', '.', '.', '.'},
+        {'.', '.', '.', '.'},
+    }, {
+        {'#', '#', '.', '.'},
+        {'#', '#', '.', '.'},
+        {'.', '.', '.', '.'},
+        {'.', '.', '.', '.'},
+    }
+};
 
 int max(int a, int b) {
     return a > b ? a : b;
 }
 
 int c(int x, int y) {
+    assert(x >= 0 && x < WIDTH);
+    assert(y >= 0);
     return y*WIDTH + x;
 }
 
@@ -29,6 +61,34 @@ void PrintChamber(char *chamber, int height) {
     printf("+");
     for (int i = 0; i < WIDTH; ++i) printf("-");
     printf("+\n");
+}
+
+bool CanMoveLeft(char *chamber, int rocktype, int rockx, int rocky) {
+    if (rockx == 0) return false;
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            if (rocktypes[rocktype][i][j] == '#' && chamber[c(rockx+i-1, rocky+j)] == '#')
+                return false;
+    return true;
+}
+
+bool CanMoveRight(char *chamber, int rocktype, int rockx, int rocky) {
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            if (rocktypes[rocktype][i][j] == '#'
+                && (rockx + i >= WIDTH - 1 // that part of the rock would move into wall
+                    || chamber[c(rockx+i+1, rocky+j)] == '#')) // would move into a settled rock
+                return false;
+    return true;
+}
+
+bool CanMoveDown(char *chamber, int rocktype, int rockx, int rocky) {
+    if (rocky == 0) return false;
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            if (rocktypes[rocktype][i][j] == '#' && chamber[c(rockx+i, rocky+j-1)] == '#')
+                return false;
+    return true;
 }
 
 int main() {
@@ -51,30 +111,34 @@ int main() {
     int highest = -1; // y coord of highest landed rock (or -1 for floor)
     int i = 0; // where we are in the jet sequence
     int rocks = 0; // how many rocks have settled
-    int rockx = 2, rocky = highest + 4, rockh = 2;
+    int rocktype = 0;
+    int rockx = 2, rocky = highest + 4;
     while (rocks < 2022) {
-        // rock move down
-        if (rocky == 0 || chamber[c(rockx, rocky - 1)] == '#' || chamber[c(rockx + 1, rocky - 1)] == '#') {
-            // settle rock
-            chamber[c(rockx, rocky)] = '#';
-            chamber[c(rockx+1, rocky)] = '#';
-            chamber[c(rockx, rocky+1)] = '#';
-            chamber[c(rockx+1, rocky+1)] = '#';
-            ++rocks;
-            rockx = 2;
-            highest = max(highest, rocky + rockh - 1);
-            if (highest > height - 10) {
-                int newheight = height * 2;
-                chamber = realloc(chamber, newheight*WIDTH * sizeof(char));
-                for (; height < newheight; ++height) {
-                    for (int i = 0; i < WIDTH; ++i) {
-                        chamber[c(i, height)] = '.';
-                    }
-                }
-            }
-            rocky = highest + 4;
-        } else {
+        if (buff[i] == '<' && CanMoveLeft(chamber, rocktype, rockx, rocky))
+            --rockx;
+        if (buff[i] == '>' && CanMoveRight(chamber, rocktype, rockx, rocky))
+            ++rockx;
+
+        if (CanMoveDown(chamber, rocktype, rockx, rocky)) {
             --rocky;
+        } else {
+            // settle rock
+            for (int i = 0; i < 4; ++i)
+                for (int j = 0; j < 4; ++j)
+                    if (rocktypes[rocktype][i][j] == '#') {
+                        chamber[c(rockx+i, rocky+j)] = '#';
+                        highest = max(highest, rocky+j);
+                    }
+            ++rocks;
+            // 'spawn' new rock
+            rocktype = rocks % 5;
+            rockx = 2;
+            rocky = highest + 4;
+            if (highest > height - 10) {
+                chamber = realloc(chamber, 2*height*WIDTH * sizeof(char));
+                memset(chamber+height*WIDTH, '.', height*WIDTH);
+                height *= 2;
+            }
         }
         ++i;
         i %= jetlen;
@@ -84,5 +148,4 @@ int main() {
     printf("tower is of height %d\n", highest + 1);
 
     free(chamber);
-    printf("hello world\n");
 }
